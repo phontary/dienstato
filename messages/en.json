@@ -52,6 +52,15 @@
     "errorIncorrect": "Incorrect password",
     "unlock": "Unlock"
   },
+  "note": {
+    "title": "Notes",
+    "create": "New Note",
+    "edit": "Edit Note",
+    "delete": "Delete Note",
+    "note": "Note",
+    "notePlaceholder": "e.g., Morning shift because afternoon hairdresser...",
+    "rightClick": "Right-click / Long press on a day or click the note icon"
+  },
   "shift": {
     "title": "Shifts",
     "create": "New Shift",

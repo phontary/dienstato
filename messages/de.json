@@ -52,6 +52,15 @@
     "errorIncorrect": "Falsches Passwort",
     "unlock": "Entsperren"
   },
+  "note": {
+    "title": "Notizen",
+    "create": "Neue Notiz",
+    "edit": "Notiz bearbeiten",
+    "delete": "Notiz löschen",
+    "note": "Notiz",
+    "notePlaceholder": "z.B. Frühdienst weil nachmittags Friseur...",
+    "rightClick": "Rechtsklick / Langes Drücken auf einen Tag oder Klick auf das Notiz-Icon"
+  },
   "shift": {
     "title": "Schichten",
     "create": "Neue Schicht",

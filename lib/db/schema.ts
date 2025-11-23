@@ -68,9 +68,28 @@ export const shiftPresets = sqliteTable("shift_presets", {
     .default(sql`CURRENT_TIMESTAMP`),
 });
 
+export const calendarNotes = sqliteTable("calendar_notes", {
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
+  calendarId: text("calendar_id")
+    .notNull()
+    .references(() => calendars.id, { onDelete: "cascade" }),
+  date: integer("date", { mode: "timestamp" }).notNull(),
+  note: text("note").notNull(),
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: integer("updated_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`CURRENT_TIMESTAMP`),
+});
+
 export type Calendar = typeof calendars.$inferSelect;
 export type NewCalendar = typeof calendars.$inferInsert;
 export type Shift = typeof shifts.$inferSelect;
 export type NewShift = typeof shifts.$inferInsert;
 export type ShiftPreset = typeof shiftPresets.$inferSelect;
 export type NewShiftPreset = typeof shiftPresets.$inferInsert;
+export type CalendarNote = typeof calendarNotes.$inferSelect;
+export type NewCalendarNote = typeof calendarNotes.$inferInsert;

@@ -8,6 +8,7 @@ A modern shift management application built with Next.js and SQLite. BetterShift
 - ⏰ **Shift Management**: Add, edit, and delete shifts with start/end times
 - 🎨 **Color Coding**: Assign colors to calendars for better visualization
 - 📋 **Shift Presets**: Create reusable shift templates for faster scheduling
+- 📝 **Calendar Notes**: Add custom notes to any day (e.g., "Morning shift because afternoon hairdresser")
 - 🗓️ **Calendar View**: Interactive monthly calendar with week-based layout
 - 🔒 **Password Protection**: Secure calendars with optional passwords
 - 🌐 **Internationalization (i18n)**: Supports multiple languages with automatic detection and manual switching

@@ -13,6 +13,7 @@ import { PasswordDialog } from "@/components/password-dialog";
 import { ManagePasswordDialog } from "@/components/manage-password-dialog";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { ShiftStats } from "@/components/shift-stats";
+import { NoteDialog } from "@/components/note-dialog";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -26,6 +27,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Calendar as CalendarIcon,
+  StickyNote,
 } from "lucide-react";
 import {
   format,
@@ -40,7 +42,7 @@ import {
   endOfWeek,
 } from "date-fns";
 import { de, enUS } from "date-fns/locale";
-import { ShiftPreset } from "@/lib/db/schema";
+import { ShiftPreset, CalendarNote } from "@/lib/db/schema";
 import { formatDateToLocal } from "@/lib/date-utils";
 
 function HomeContent() {
@@ -67,6 +69,9 @@ function HomeContent() {
     useState(false);
   const [showMobileCalendarDialog, setShowMobileCalendarDialog] =
     useState(false);
+  const [showNoteDialog, setShowNoteDialog] = useState(false);
+  const [selectedNote, setSelectedNote] = useState<CalendarNote | undefined>();
+  const [notes, setNotes] = useState<CalendarNote[]>([]);
   const [pendingAction, setPendingAction] = useState<{
     type: "delete" | "edit";
     shiftId?: string;
@@ -93,9 +98,11 @@ function HomeContent() {
     if (selectedCalendar) {
       fetchShifts();
       fetchPresets();
+      fetchNotes();
     } else {
       setShifts([]);
       setPresets([]);
+      setNotes([]);
     }
   }, [selectedCalendar]);
 
@@ -150,6 +157,18 @@ function HomeContent() {
       setShifts(data);
     } catch (error) {
       console.error("Failed to fetch shifts:", error);
+    }
+  };
+
+  const fetchNotes = async () => {
+    if (!selectedCalendar) return;
+
+    try {
+      const response = await fetch(`/api/notes?calendarId=${selectedCalendar}`);
+      const data = await response.json();
+      setNotes(data);
+    } catch (error) {
+      console.error("Failed to fetch notes:", error);
     }
   };
 
@@ -295,6 +314,99 @@ function HomeContent() {
   const handlePresetPasswordRequired = async (action: () => Promise<void>) => {
     setPendingAction({ type: "edit", presetAction: action });
     setShowPasswordDialog(true);
+  };
+
+  const createNote = async (noteText: string, date: Date) => {
+    if (!selectedCalendar) return;
+
+    try {
+      const response = await fetch("/api/notes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          calendarId: selectedCalendar,
+          date: formatDateToLocal(date),
+          note: noteText,
+        }),
+      });
+      const newNote = await response.json();
+      setNotes([...notes, newNote]);
+    } catch (error) {
+      console.error("Failed to create note:", error);
+    }
+  };
+
+  const updateNote = async (noteId: string, noteText: string) => {
+    try {
+      const response = await fetch(`/api/notes/${noteId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ note: noteText }),
+      });
+      const updatedNote = await response.json();
+      setNotes(notes.map((n) => (n.id === noteId ? updatedNote : n)));
+    } catch (error) {
+      console.error("Failed to update note:", error);
+    }
+  };
+
+  const deleteNote = async (noteId: string) => {
+    try {
+      await fetch(`/api/notes/${noteId}`, { method: "DELETE" });
+      setNotes(notes.filter((n) => n.id !== noteId));
+    } catch (error) {
+      console.error("Failed to delete note:", error);
+    }
+  };
+
+  const handleNoteSubmit = (noteText: string) => {
+    if (selectedNote) {
+      updateNote(selectedNote.id, noteText);
+    } else if (selectedDate) {
+      createNote(noteText, selectedDate);
+    }
+  };
+
+  const handleNoteDelete = () => {
+    if (selectedNote) {
+      deleteNote(selectedNote.id);
+    }
+  };
+
+  const handleDayRightClick = (e: React.MouseEvent, date: Date) => {
+    e.preventDefault();
+    setSelectedDate(date);
+    const existingNote = notes.find(
+      (note) => note.date && isSameDay(new Date(note.date), date)
+    );
+    setSelectedNote(existingNote);
+    setShowNoteDialog(true);
+  };
+
+  const handleNoteIconClick = (e: React.MouseEvent, date: Date) => {
+    e.stopPropagation();
+    setSelectedDate(date);
+    const existingNote = notes.find(
+      (note) => note.date && isSameDay(new Date(note.date), date)
+    );
+    setSelectedNote(existingNote);
+    setShowNoteDialog(true);
+  };
+
+  const handleLongPress = (date: Date) => {
+    setSelectedDate(date);
+    const existingNote = notes.find(
+      (note) => note.date && isSameDay(new Date(note.date), date)
+    );
+    setSelectedNote(existingNote);
+    setShowNoteDialog(true);
+  };
+
+  const handleNoteDialogChange = (open: boolean) => {
+    setShowNoteDialog(open);
+    if (!open) {
+      setSelectedNote(undefined);
+    }
   };
 
   const handleShiftSubmit = (formData: ShiftFormData) => {
@@ -593,14 +705,35 @@ function HomeContent() {
           ))}
           {calendarDays.map((day, idx) => {
             const dayShifts = getShiftsForDate(day);
+            const dayNote = notes.find(
+              (note) => note.date && isSameDay(new Date(note.date), day)
+            );
             const isCurrentMonth = day.getMonth() === currentDate.getMonth();
             const isTodayDate = isToday(day);
+
+            // Long press handling for mobile
+            let pressTimer: NodeJS.Timeout | null = null;
+            const handleTouchStart = (e: React.TouchEvent) => {
+              pressTimer = setTimeout(() => handleLongPress(day), 500);
+            };
+            const handleTouchEnd = () => {
+              if (pressTimer) clearTimeout(pressTimer);
+            };
 
             return (
               <button
                 key={idx}
                 onClick={() => handleAddShift(day)}
-                disabled={!selectedPresetId}
+                onContextMenu={(e) => handleDayRightClick(e, day)}
+                onTouchStart={handleTouchStart}
+                onTouchEnd={handleTouchEnd}
+                onTouchMove={handleTouchEnd}
+                disabled={false}
+                style={{
+                  WebkitUserSelect: "none",
+                  userSelect: "none",
+                  WebkitTouchCallout: "none",
+                }}
                 className={`
                   min-h-24 sm:min-h-24 px-0.5 py-1 sm:p-2 rounded-md text-sm transition-all relative flex flex-col border-2
                   ${
@@ -614,19 +747,37 @@ function HomeContent() {
                       : "border-transparent"
                   }
                   ${
-                    selectedPresetId && isCurrentMonth
+                    isCurrentMonth
                       ? "hover:bg-accent cursor-pointer active:bg-accent/80"
-                      : "cursor-not-allowed"
+                      : selectedPresetId
+                      ? "cursor-not-allowed"
+                      : "cursor-pointer"
                   }
                   ${!isCurrentMonth ? "opacity-50" : ""}
                 `}
               >
                 <div
-                  className={`text-xs sm:text-xs font-medium mb-0.5 ${
+                  className={`text-xs sm:text-xs font-medium mb-0.5 flex items-center justify-between ${
                     isTodayDate ? "text-primary font-bold" : ""
                   }`}
                 >
-                  {day.getDate()}
+                  <span>{day.getDate()}</span>
+                  {dayNote && (
+                    <div
+                      className="group/note relative"
+                      onClick={(e) => handleNoteIconClick(e, day)}
+                      title={dayNote.note}
+                    >
+                      <StickyNote className="h-3 w-3 text-amber-500 cursor-pointer hover:text-amber-600 transition-colors" />
+                      {/* Tooltip for desktop */}
+                      <div className="hidden sm:block absolute z-50 bottom-full right-0 mb-1 invisible group-hover/note:visible opacity-0 group-hover/note:opacity-100 transition-opacity duration-200">
+                        <div className="bg-popover text-popover-foreground text-xs rounded-md shadow-lg border p-2 max-w-[200px] whitespace-normal break-words">
+                          {dayNote.note}
+                          <div className="absolute top-full right-2 -mt-1 border-4 border-transparent border-t-popover"></div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
                 <div className="flex-1 space-y-0.5 overflow-hidden">
                   {dayShifts.slice(0, 2).map((shift) => (
@@ -718,6 +869,9 @@ function HomeContent() {
                   {presets.length === 0
                     ? t("shift.createPresetFirst")
                     : t("shift.noShiftsDescription")}
+                </p>
+                <p className="text-xs text-muted-foreground/70 mt-2">
+                  💡 {t("note.rightClick")}
                 </p>
               </div>
             </div>
@@ -826,6 +980,14 @@ function HomeContent() {
           }}
         />
       )}
+      <NoteDialog
+        open={showNoteDialog}
+        onOpenChange={handleNoteDialogChange}
+        onSubmit={handleNoteSubmit}
+        onDelete={selectedNote ? handleNoteDelete : undefined}
+        selectedDate={selectedDate}
+        note={selectedNote}
+      />
 
       {/* Footer */}
       <div className="border-t bg-background mt-auto">
