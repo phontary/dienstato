@@ -7,6 +7,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -205,6 +206,15 @@ export function ShiftDialog({
           <DialogTitle>
             {shift ? t("shift.edit") : t("shift.create")}
           </DialogTitle>
+          <DialogDescription>
+            {shift
+              ? t("shift.editDescription", {
+                  default: "Update the shift details",
+                })
+              : t("shift.createDescription", {
+                  default: "Add a new shift to your calendar",
+                })}
+          </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Preset Selection */}

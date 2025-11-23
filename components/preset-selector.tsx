@@ -10,6 +10,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -397,6 +398,11 @@ export function PresetSelector({
         <DialogContent className="sm:max-w-[500px] max-h-[85vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>{t("preset.manage")}</DialogTitle>
+            <DialogDescription>
+              {t("preset.manageDescription", {
+                default: "Edit or delete your shift presets",
+              })}
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-3 overflow-y-auto flex-1 pr-2">
             <Button
@@ -463,6 +469,15 @@ export function PresetSelector({
             <DialogTitle className="text-base sm:text-lg">
               {isCreatingNew ? t("preset.createNew") : t("preset.edit")}
             </DialogTitle>
+            <DialogDescription className="text-sm">
+              {isCreatingNew
+                ? t("preset.createDescription", {
+                    default: "Create a new preset for quick shift creation",
+                  })
+                : t("preset.editDescription", {
+                    default: "Update preset details",
+                  })}
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 pb-2">
             <div className="space-y-1.5">

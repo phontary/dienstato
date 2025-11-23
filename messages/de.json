@@ -18,6 +18,8 @@
   "calendar": {
     "title": "Kalender",
     "create": "Neuen Kalender erstellen",
+    "createDescription": "Erstelle einen neuen Kalender, um deine Schichten zu organisieren",
+    "selectDescription": "Wähle einen Kalender aus, um deine Schichten zu verwalten",
     "name": "Kalendername",
     "namePlaceholder": "z.B. Meine Schichten",
     "color": "Farbe",
@@ -53,7 +55,9 @@
   "shift": {
     "title": "Schichten",
     "create": "Neue Schicht",
+    "createDescription": "Füge eine neue Schicht zu deinem Kalender hinzu",
     "edit": "Schicht bearbeiten",
+    "editDescription": "Aktualisiere die Schichtdetails",
     "delete": "Schicht löschen",
     "date": "Datum",
     "startTime": "Startzeit",
@@ -87,6 +91,9 @@
     "edit": "Vorlage bearbeiten",
     "delete": "Vorlage löschen",
     "manage": "Vorlagen verwalten",
+    "manageDescription": "Bearbeite oder lösche deine Schichtvorlagen",
+    "createDescription": "Erstelle eine neue Vorlage für eine schnelle Schichterstellung",
+    "editDescription": "Aktualisiere Vorlagendetails",
     "name": "Vorlagenname",
     "namePlaceholder": "z.B. Frühschicht",
     "saveAsPreset": "Als Vorlage speichern",

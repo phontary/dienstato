@@ -19,6 +19,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import {
   Plus,
@@ -521,6 +522,11 @@ function HomeContent() {
               <div className="w-1 h-5 bg-primary rounded-full"></div>
               {t("calendar.select", { default: "Your BetterShift Calendar" })}
             </DialogTitle>
+            <DialogDescription>
+              {t("calendar.selectDescription", {
+                default: "Choose a calendar to manage your shifts",
+              })}
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <CalendarSelector

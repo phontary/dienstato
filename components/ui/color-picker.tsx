@@ -9,6 +9,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogTrigger,
 } from "@/components/ui/dialog";
 
@@ -69,6 +70,9 @@ export function ColorPicker({
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
               <DialogTitle>Custom Color</DialogTitle>
+              <DialogDescription>
+                Choose a custom color using the color picker
+              </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
               <HexColorPicker color={color} onChange={onChange} />

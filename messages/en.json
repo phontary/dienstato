@@ -18,6 +18,8 @@
   "calendar": {
     "title": "Calendar",
     "create": "Create New Calendar",
+    "createDescription": "Create a new calendar to organize your shifts",
+    "selectDescription": "Choose a calendar to manage your shifts",
     "name": "Calendar Name",
     "namePlaceholder": "e.g., My Shifts",
     "color": "Color",
@@ -53,7 +55,9 @@
   "shift": {
     "title": "Shifts",
     "create": "New Shift",
+    "createDescription": "Add a new shift to your calendar",
     "edit": "Edit Shift",
+    "editDescription": "Update the shift details",
     "delete": "Delete Shift",
     "date": "Date",
     "startTime": "Start Time",
@@ -87,6 +91,9 @@
     "edit": "Edit Preset",
     "delete": "Delete Preset",
     "manage": "Manage Presets",
+    "manageDescription": "Edit or delete your shift presets",
+    "createDescription": "Create a new preset for quick shift creation",
+    "editDescription": "Update preset details",
     "name": "Preset Name",
     "namePlaceholder": "e.g., Morning Shift",
     "saveAsPreset": "Save as preset",
