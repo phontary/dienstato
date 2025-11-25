@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { calendars, shifts } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { verifyPassword } from "@/lib/password-utils";
+import { eventEmitter, CalendarChangeEvent } from "@/lib/event-emitter";
 
 // GET single shift
 export async function GET(
@@ -118,6 +119,14 @@ export async function PATCH(
       .where(eq(shifts.id, id))
       .returning();
 
+    // Emit event for SSE
+    eventEmitter.emit("calendar-change", {
+      type: "shift",
+      action: "update",
+      calendarId: existingShift.calendarId,
+      data: { ...shift, calendar },
+    } as CalendarChangeEvent);
+
     return NextResponse.json({ ...shift, calendar });
   } catch (error) {
     console.error("Failed to update shift:", error);
@@ -169,6 +178,14 @@ export async function DELETE(
     }
 
     await db.delete(shifts).where(eq(shifts.id, id));
+
+    // Emit event for SSE
+    eventEmitter.emit("calendar-change", {
+      type: "shift",
+      action: "delete",
+      calendarId: shift.calendarId,
+      data: { id },
+    } as CalendarChangeEvent);
 
     return NextResponse.json({ success: true });
   } catch (error) {

@@ -13,6 +13,7 @@ A modern shift management application built with Next.js and SQLite. BetterShift
 - 🔒 **Password Protection**: Secure calendars with optional passwords
 - 🌐 **Internationalization (i18n)**: Supports multiple languages with automatic detection and manual switching
 - 📊 **Shift Statistics**: View statistics for shifts over different time periods
+- 🔄 **Real-time Synchronization**: Automatic data refresh and offline handling with server-sent events
 - 💾 **SQLite Database**: Lightweight, file-based database with Drizzle ORM
 - 🐳 **Docker Support**: Easy deployment with Docker and Docker Compose
 

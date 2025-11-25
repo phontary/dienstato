@@ -92,18 +92,77 @@ function HomeContent() {
   const [statsRefreshTrigger, setStatsRefreshTrigger] = useState(0);
   const [isTogglingShift, setIsTogglingShift] = useState(false);
   const [showShiftsSection, setShowShiftsSection] = useState(false);
-  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const eventSourceRef = useRef<EventSource | null>(null);
+  const [isConnected, setIsConnected] = useState(true);
+  const lastSyncTimeRef = useRef<number>(Date.now());
+  const disconnectTimeRef = useRef<number | null>(null);
 
   // Fetch calendars on mount and setup cleanup
   useEffect(() => {
     fetchCalendars();
 
     return () => {
-      if (pollingIntervalRef.current) {
-        clearInterval(pollingIntervalRef.current);
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close();
       }
     };
   }, []);
+
+  // Handle page visibility changes (tab switching, app backgrounding)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible" && selectedCalendar) {
+        const now = Date.now();
+        const timeSinceLastSync = now - lastSyncTimeRef.current;
+
+        // If more than 30 seconds passed or we were disconnected, resync
+        if (timeSinceLastSync > 30000 || disconnectTimeRef.current) {
+          console.log("Tab became visible, resyncing data...");
+          toast.info(t("sync.refreshing"), { duration: Infinity });
+          fetchShifts();
+          fetchPresets();
+          fetchNotes();
+          setStatsRefreshTrigger((prev) => prev + 1);
+          lastSyncTimeRef.current = now;
+          disconnectTimeRef.current = null;
+          // Dismiss the refreshing toast after data is loaded
+          setTimeout(() => toast.dismiss(), 1000);
+        }
+      }
+    };
+
+    const handleOnline = () => {
+      console.log("Network connection restored");
+      toast.dismiss(); // Dismiss all persistent error toasts
+      toast.success(t("sync.reconnected"));
+      setIsConnected(true);
+      if (selectedCalendar) {
+        fetchShifts();
+        fetchPresets();
+        fetchNotes();
+        setStatsRefreshTrigger((prev) => prev + 1);
+        lastSyncTimeRef.current = Date.now();
+        disconnectTimeRef.current = null;
+      }
+    };
+
+    const handleOffline = () => {
+      console.log("Network connection lost");
+      toast.error(t("sync.offline"), { duration: Infinity });
+      setIsConnected(false);
+      disconnectTimeRef.current = Date.now();
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, [selectedCalendar, t]);
 
   // Update URL when selected calendar changes
   useEffect(() => {
@@ -112,33 +171,105 @@ function HomeContent() {
     }
   }, [selectedCalendar, router]);
 
-  // Fetch shifts and presets when calendar changes and setup polling
+  // Fetch shifts and presets when calendar changes and setup SSE
   useEffect(() => {
     if (selectedCalendar) {
       fetchShifts();
       fetchPresets();
       fetchNotes();
 
-      // Setup polling for live sync (every 5 seconds)
-      if (pollingIntervalRef.current) {
-        clearInterval(pollingIntervalRef.current);
+      // Close existing SSE connection if any
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close();
       }
-      const interval = setInterval(() => {
-        fetchShifts();
-        fetchPresets();
-        fetchNotes();
-      }, 5000);
-      pollingIntervalRef.current = interval;
+
+      // Setup Server-Sent Events for real-time updates
+      const eventSource = new EventSource(
+        `/api/events/stream?calendarId=${selectedCalendar}`
+      );
+
+      eventSource.onopen = () => {
+        setIsConnected(true);
+        toast.dismiss(); // Dismiss any persistent error/info toasts
+
+        // If we were disconnected for more than 10 seconds, resync all data
+        if (disconnectTimeRef.current) {
+          const disconnectDuration = Date.now() - disconnectTimeRef.current;
+          if (disconnectDuration > 10000) {
+            console.log("Reconnected after long disconnect, resyncing...");
+            toast.info(t("sync.resyncing"), { duration: Infinity });
+            fetchShifts();
+            fetchPresets();
+            fetchNotes();
+            setStatsRefreshTrigger((prev) => prev + 1);
+          }
+          disconnectTimeRef.current = null;
+        }
+        lastSyncTimeRef.current = Date.now();
+      };
+
+      eventSource.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+
+          // Handle connection message
+          if (data.type === "connected") {
+            console.log("SSE connected for calendar:", data.calendarId);
+            return;
+          }
+
+          // Handle calendar change events
+          if (data.type === "shift") {
+            fetchShifts();
+            setStatsRefreshTrigger((prev) => prev + 1);
+          } else if (data.type === "preset") {
+            fetchPresets();
+          } else if (data.type === "note") {
+            fetchNotes();
+          }
+
+          lastSyncTimeRef.current = Date.now();
+        } catch (error) {
+          console.error("Error parsing SSE message:", error);
+        }
+      };
+
+      eventSource.onerror = (error) => {
+        console.error("SSE connection error:", error);
+        setIsConnected(false);
+        disconnectTimeRef.current = Date.now();
+        eventSource.close();
+
+        // Show error message if offline for more than 5 seconds
+        const errorTimeout = setTimeout(() => {
+          if (!navigator.onLine) {
+            toast.error(t("sync.disconnected"), { duration: Infinity });
+          }
+        }, 5000);
+
+        // Attempt to reconnect after 3 seconds
+        setTimeout(() => {
+          clearTimeout(errorTimeout);
+          if (selectedCalendar && navigator.onLine) {
+            console.log("Attempting to reconnect and resync...");
+            fetchShifts();
+            fetchPresets();
+            fetchNotes();
+          }
+        }, 3000);
+      };
+
+      eventSourceRef.current = eventSource;
 
       return () => {
-        clearInterval(interval);
+        eventSource.close();
       };
     } else {
       setShifts([]);
       setPresets([]);
       setNotes([]);
-      if (pollingIntervalRef.current) {
-        clearInterval(pollingIntervalRef.current);
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close();
       }
     }
   }, [selectedCalendar]);
@@ -798,7 +929,17 @@ function HomeContent() {
                   <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary via-primary/90 to-primary/70 flex items-center justify-center shadow-xl shadow-primary/30 ring-2 ring-primary/20">
                     <CalendarIcon className="h-6 w-6 text-primary-foreground" />
                   </div>
-                  <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-green-500 rounded-full border-2 border-background animate-pulse"></div>
+                  {/* Connection Status Indicator */}
+                  <div
+                    className={`absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full border-2 border-background transition-colors ${
+                      isConnected ? "bg-green-500 animate-pulse" : "bg-red-500"
+                    }`}
+                    title={
+                      isConnected
+                        ? t("sync.reconnected")
+                        : t("sync.disconnected")
+                    }
+                  ></div>
                 </div>
                 <div>
                   <h1 className="text-xl font-bold bg-gradient-to-r from-foreground via-foreground to-foreground/70 bg-clip-text">
@@ -1081,15 +1222,8 @@ function HomeContent() {
                 </div>
                 <div className="flex-1 space-y-0.5 sm:space-y-1 overflow-hidden">
                   {dayShifts.slice(0, 2).map((shift) => (
-                    <motion.div
+                    <div
                       key={shift.id}
-                      initial={{ opacity: 0, y: 8 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -8 }}
-                      transition={{
-                        duration: 0.15,
-                        ease: "easeOut",
-                      }}
                       className="text-[10px] sm:text-xs px-0.5 py-0.5 sm:px-1.5 sm:py-1 rounded"
                       style={{
                         backgroundColor: shift.color
@@ -1111,7 +1245,7 @@ function HomeContent() {
                           ? t("shift.allDay")
                           : shift.startTime.substring(0, 5)}
                       </div>
-                    </motion.div>
+                    </div>
                   ))}
                   {dayShifts.length > 2 && (
                     <div className="text-[10px] sm:text-xs text-muted-foreground font-medium text-center pt-0.5">

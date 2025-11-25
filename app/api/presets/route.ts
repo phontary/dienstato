@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { shiftPresets, calendars } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { verifyPassword } from "@/lib/password-utils";
+import { eventEmitter, CalendarChangeEvent } from "@/lib/event-emitter";
 
 // GET all presets for a calendar
 export async function GET(request: NextRequest) {
@@ -90,6 +91,14 @@ export async function POST(request: NextRequest) {
         isAllDay: isAllDay || false,
       })
       .returning();
+
+    // Emit event for SSE
+    eventEmitter.emit("calendar-change", {
+      type: "preset",
+      action: "create",
+      calendarId,
+      data: preset,
+    } as CalendarChangeEvent);
 
     return NextResponse.json(preset);
   } catch (error) {

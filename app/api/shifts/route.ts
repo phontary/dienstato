@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { calendars, shifts } from "@/lib/db/schema";
 import { eq, and, gte, lte } from "drizzle-orm";
+import { eventEmitter, CalendarChangeEvent } from "@/lib/event-emitter";
 
 // GET shifts for a calendar (with optional date filter)
 export async function GET(request: Request) {
@@ -111,6 +112,14 @@ export async function POST(request: Request) {
       .select()
       .from(calendars)
       .where(eq(calendars.id, calendarId));
+
+    // Emit event for SSE
+    eventEmitter.emit("calendar-change", {
+      type: "shift",
+      action: "create",
+      calendarId,
+      data: { ...shift, calendar },
+    } as CalendarChangeEvent);
 
     return NextResponse.json({ ...shift, calendar }, { status: 201 });
   } catch (error) {

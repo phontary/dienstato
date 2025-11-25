@@ -143,6 +143,13 @@
     "total": "Gesamt",
     "noData": "Keine Schichten in diesem Zeitraum"
   },
+  "sync": {
+    "refreshing": "Aktualisiere Daten...",
+    "resyncing": "Synchronisiere nach Verbindungsunterbrechung...",
+    "reconnected": "Verbindung wiederhergestellt",
+    "offline": "Keine Internetverbindung",
+    "disconnected": "Verbindung zum Server verloren"
+  },
   "onboarding": {
     "welcome": "Willkommen bei BetterShift",
     "description": "Erstelle deinen ersten Kalender, um deine Schichten zu verwalten.",

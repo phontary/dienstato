@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { shiftPresets, shifts, calendars } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { verifyPassword } from "@/lib/password-utils";
+import { eventEmitter, CalendarChangeEvent } from "@/lib/event-emitter";
 
 // PATCH update a preset
 export async function PATCH(
@@ -85,6 +86,14 @@ export async function PATCH(
       })
       .where(eq(shifts.presetId, id));
 
+    // Emit event for SSE
+    eventEmitter.emit("calendar-change", {
+      type: "preset",
+      action: "update",
+      calendarId: existingPreset.calendarId,
+      data: updatedPreset,
+    } as CalendarChangeEvent);
+
     return NextResponse.json(updatedPreset);
   } catch (error) {
     console.error("Error updating preset:", error);
@@ -143,6 +152,14 @@ export async function DELETE(
 
     // Delete the preset
     await db.delete(shiftPresets).where(eq(shiftPresets.id, id));
+
+    // Emit event for SSE
+    eventEmitter.emit("calendar-change", {
+      type: "preset",
+      action: "delete",
+      calendarId: preset.calendarId,
+      data: { id },
+    } as CalendarChangeEvent);
 
     return NextResponse.json({ success: true });
   } catch (error) {

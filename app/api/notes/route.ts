@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { calendarNotes } from "@/lib/db/schema";
 import { eq, and, gte, lte } from "drizzle-orm";
+import { eventEmitter, CalendarChangeEvent } from "@/lib/event-emitter";
 
 // GET calendar notes for a calendar (with optional date filter)
 export async function GET(request: Request) {
@@ -72,6 +73,14 @@ export async function POST(request: Request) {
         note,
       })
       .returning();
+
+    // Emit event for SSE
+    eventEmitter.emit("calendar-change", {
+      type: "note",
+      action: "create",
+      calendarId,
+      data: calendarNote,
+    } as CalendarChangeEvent);
 
     return NextResponse.json(calendarNote);
   } catch (error) {

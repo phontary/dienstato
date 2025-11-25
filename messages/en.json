@@ -143,9 +143,16 @@
     "total": "Total",
     "noData": "No shifts in this period"
   },
+  "sync": {
+    "refreshing": "Refreshing data...",
+    "resyncing": "Resyncing after disconnect...",
+    "reconnected": "Connection restored",
+    "offline": "No internet connection",
+    "disconnected": "Connection to server lost"
+  },
   "onboarding": {
     "welcome": "Welcome to BetterShift",
-    "description": "Get started by creating your first calendar to track your shifts.",
+    "description": "Create your first calendar to manage your shifts.",
     "createCalendar": "Create Calendar"
   }
 }
