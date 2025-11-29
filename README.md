@@ -57,7 +57,7 @@ A modern shift management application built with Next.js and SQLite. BetterShift
 
 ### Docker Deployment
 
-2. **Build and run with Docker Compose**
+1. **Build and run with Docker Compose**
 
    ```bash
    docker-compose up -d
@@ -66,7 +66,7 @@ A modern shift management application built with Next.js and SQLite. BetterShift
    docker compose exec bettershift npm run db:migrate
    ```
 
-3. **Access the application**
+2. **Access the application**
    The application will be available at the port specified in your docker-compose file (default: 3000)
 
 ### Building for Production
