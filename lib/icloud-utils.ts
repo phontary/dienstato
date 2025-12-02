@@ -139,6 +139,15 @@ export function splitMultiDayEvent(
     dayIndex: number;
   }> = [];
 
+  // For all-day events, the end date in iCalendar format is exclusive
+  // (e.g., a one-day event on Dec 1 has end date Dec 2 00:00)
+  // We need to subtract one day for all-day events to get the actual last day
+  let adjustedEndDate = endDate;
+  if (isAllDay) {
+    adjustedEndDate = new Date(endDate);
+    adjustedEndDate.setDate(adjustedEndDate.getDate() - 1);
+  }
+
   // Normalize dates to midnight for comparison
   const startDay = new Date(
     startDate.getFullYear(),
@@ -146,9 +155,9 @@ export function splitMultiDayEvent(
     startDate.getDate()
   );
   const endDay = new Date(
-    endDate.getFullYear(),
-    endDate.getMonth(),
-    endDate.getDate()
+    adjustedEndDate.getFullYear(),
+    adjustedEndDate.getMonth(),
+    adjustedEndDate.getDate()
   );
 
   // Check if event spans multiple days
@@ -166,8 +175,11 @@ export function splitMultiDayEvent(
       const startMinutes = startDate.getMinutes().toString().padStart(2, "0");
       startTime = `${startHours}:${startMinutes}`;
 
-      const endHours = endDate.getHours().toString().padStart(2, "0");
-      const endMinutes = endDate.getMinutes().toString().padStart(2, "0");
+      const endHours = adjustedEndDate.getHours().toString().padStart(2, "0");
+      const endMinutes = adjustedEndDate
+        .getMinutes()
+        .toString()
+        .padStart(2, "0");
       endTime = `${endHours}:${endMinutes}`;
     }
 
@@ -199,8 +211,14 @@ export function splitMultiDayEvent(
         } else if (i === daysDiff) {
           // Last day: start at midnight, use actual end time
           startTime = "00:00";
-          const endHours = endDate.getHours().toString().padStart(2, "0");
-          const endMinutes = endDate.getMinutes().toString().padStart(2, "0");
+          const endHours = adjustedEndDate
+            .getHours()
+            .toString()
+            .padStart(2, "0");
+          const endMinutes = adjustedEndDate
+            .getMinutes()
+            .toString()
+            .padStart(2, "0");
           endTime = `${endHours}:${endMinutes}`;
         }
         // Middle days keep default 00:00 - 23:59
