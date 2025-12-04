@@ -710,48 +710,50 @@ export function ExternalSyncManageDialog({
             </Button>
           )}
 
-          {/* Instructions */}
-          <div className="rounded-lg border bg-blue-50 dark:bg-blue-950/20 p-4">
-            <div className="text-sm space-y-2">
-              <div className="font-medium">
-                {t(
-                  formSyncType === "google"
-                    ? "externalSync.howToTitleGoogle"
-                    : "externalSync.howToTitleICloud"
-                )}
+          {/* Instructions - only show when adding/editing */}
+          {(showAddForm || editingSync) && (
+            <div className="rounded-lg border bg-blue-50 dark:bg-blue-950/20 p-4">
+              <div className="text-sm space-y-2">
+                <div className="font-medium">
+                  {t(
+                    formSyncType === "google"
+                      ? "externalSync.howToTitleGoogle"
+                      : "externalSync.howToTitleICloud"
+                  )}
+                </div>
+                <ol className="list-decimal list-inside space-y-1 text-muted-foreground">
+                  <li>
+                    {t(
+                      formSyncType === "google"
+                        ? "externalSync.howToStep1Google"
+                        : "externalSync.howToStep1ICloud"
+                    )}
+                  </li>
+                  <li>
+                    {t(
+                      formSyncType === "google"
+                        ? "externalSync.howToStep2Google"
+                        : "externalSync.howToStep2ICloud"
+                    )}
+                  </li>
+                  <li>
+                    {t(
+                      formSyncType === "google"
+                        ? "externalSync.howToStep3Google"
+                        : "externalSync.howToStep3ICloud"
+                    )}
+                  </li>
+                  <li>
+                    {t(
+                      formSyncType === "google"
+                        ? "externalSync.howToStep4Google"
+                        : "externalSync.howToStep4ICloud"
+                    )}
+                  </li>
+                </ol>
               </div>
-              <ol className="list-decimal list-inside space-y-1 text-muted-foreground">
-                <li>
-                  {t(
-                    formSyncType === "google"
-                      ? "externalSync.howToStep1Google"
-                      : "externalSync.howToStep1ICloud"
-                  )}
-                </li>
-                <li>
-                  {t(
-                    formSyncType === "google"
-                      ? "externalSync.howToStep2Google"
-                      : "externalSync.howToStep2ICloud"
-                  )}
-                </li>
-                <li>
-                  {t(
-                    formSyncType === "google"
-                      ? "externalSync.howToStep3Google"
-                      : "externalSync.howToStep3ICloud"
-                  )}
-                </li>
-                <li>
-                  {t(
-                    formSyncType === "google"
-                      ? "externalSync.howToStep4Google"
-                      : "externalSync.howToStep4ICloud"
-                  )}
-                </li>
-              </ol>
             </div>
-          </div>
+          )}
         </div>
       </DialogContent>
     </Dialog>
