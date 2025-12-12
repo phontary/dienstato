@@ -23,13 +23,16 @@ import { useDialogStates } from "@/hooks/useDialogStates";
 import { useVersionInfo } from "@/hooks/useVersionInfo";
 import { EmptyCalendarState } from "@/components/empty-calendar-state";
 import { LockedCalendarView } from "@/components/locked-calendar-view";
-import { LoadingState } from "@/components/loading-state";
+import { CalendarSkeleton } from "@/components/calendar-skeleton";
+import { CalendarContentSkeleton } from "@/components/calendar-content-skeleton";
+import { LockedCalendarSkeleton } from "@/components/locked-calendar-skeleton";
 import { CalendarContent } from "@/components/calendar-content";
 import { AppFooter } from "@/components/app-footer";
 import { AppHeader } from "@/components/app-header";
 import { DialogManager } from "@/components/dialog-manager";
 import { CalendarDialog } from "@/components/calendar-dialog";
 import { getCalendarDays } from "@/lib/calendar-utils";
+import { getCachedPassword } from "@/lib/password-cache";
 
 function HomeContent() {
   const router = useRouter();
@@ -51,6 +54,7 @@ function HomeContent() {
   const {
     shifts,
     setShifts,
+    loading: shiftsLoading,
     createShift: createShiftHook,
     updateShift: updateShiftHook,
     deleteShift: deleteShiftHook,
@@ -287,9 +291,15 @@ function HomeContent() {
   // Calendar grid calculations
   const calendarDays = getCalendarDays(currentDate);
 
+  // Check if selected calendar is locked and has no cached password
+  const isSelectedCalendarLocked =
+    selectedCalendar &&
+    calendars.find((c) => c.id === selectedCalendar)?.isLocked &&
+    !getCachedPassword(selectedCalendar);
+
   // Loading state
   if (loading) {
-    return <LoadingState />;
+    return <CalendarSkeleton />;
   }
 
   // Empty state
@@ -335,12 +345,16 @@ function HomeContent() {
         onManualShiftCreation={handleManualShiftCreation}
         onMobileCalendarDialogChange={dialogStates.setShowMobileCalendarDialog}
         onViewSettingsClick={() => dialogStates.setShowViewSettingsDialog(true)}
-        presetsLoading={presetsLoading}
+        presetsLoading={presetsLoading && !isSelectedCalendarLocked}
       />
 
       <div className="container max-w-4xl mx-auto px-1 py-3 sm:p-4 flex-1">
-        {isVerifyingCalendarPassword ? (
-          <LoadingState />
+        {isVerifyingCalendarPassword || shiftsLoading ? (
+          isSelectedCalendarLocked ? (
+            <LockedCalendarSkeleton />
+          ) : (
+            <CalendarContentSkeleton daysCount={calendarDays.length} />
+          )
         ) : selectedCalendar && !isCalendarUnlocked ? (
           <LockedCalendarView
             calendarId={selectedCalendar}

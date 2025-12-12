@@ -24,12 +24,12 @@ import { ColorPicker } from "@/components/ui/color-picker";
 import { Slider } from "@/components/ui/slider";
 import { useTranslations } from "next-intl";
 import {
-  Loader2,
   Trash2,
   RefreshCw,
   Plus,
   Edit2,
   ChevronDown,
+  Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { PRESET_COLORS } from "@/lib/constants";
