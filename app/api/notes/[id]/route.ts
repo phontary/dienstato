@@ -68,7 +68,8 @@ export async function PUT(
   try {
     const { id } = await params;
     const body = await request.json();
-    const { note, password } = body;
+    const { note, type, color, recurringPattern, recurringInterval, password } =
+      body;
 
     if (!note) {
       return NextResponse.json({ error: "Note is required" }, { status: 400 });
@@ -110,10 +111,33 @@ export async function PUT(
       }
     }
 
+    // Determine the final type value
+    const finalType = type !== undefined ? type : existingNote.type;
+
     const [updated] = await db
       .update(calendarNotes)
       .set({
         note,
+        type: finalType,
+        // Clear event-specific fields when converting to note
+        color:
+          finalType === "note"
+            ? null
+            : color !== undefined
+            ? color
+            : existingNote.color,
+        recurringPattern:
+          finalType === "note"
+            ? "none"
+            : recurringPattern !== undefined
+            ? recurringPattern
+            : existingNote.recurringPattern,
+        recurringInterval:
+          finalType === "note"
+            ? null
+            : recurringInterval !== undefined
+            ? recurringInterval
+            : existingNote.recurringInterval,
         updatedAt: new Date(),
       })
       .where(eq(calendarNotes.id, id))

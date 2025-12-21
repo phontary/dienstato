@@ -45,6 +45,7 @@ import {
   verifyAndCachePassword,
 } from "@/lib/password-cache";
 import { formatDateToLocal } from "@/lib/date-utils";
+import { findNotesForDate } from "@/lib/event-utils";
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
 
@@ -146,8 +147,20 @@ function HomeContent() {
   });
 
   // Wrapper for note submit that reloads compare data
-  const handleNoteSubmit = async (noteText: string) => {
-    await noteActions.handleNoteSubmit(noteText);
+  const handleNoteSubmit = async (
+    noteText: string,
+    type: "note" | "event",
+    color?: string,
+    recurringPattern?: string,
+    recurringInterval?: number
+  ) => {
+    await noteActions.handleNoteSubmit(
+      noteText,
+      type,
+      color,
+      recurringPattern,
+      recurringInterval
+    );
 
     // Reload notes for the specific calendar in compare mode
     if (isCompareMode && compareNoteCalendarId) {
@@ -197,6 +210,61 @@ function HomeContent() {
         console.error("Failed to reload notes:", error);
       }
     }
+  };
+
+  // Notes list dialog handlers
+  const handleEditNoteFromList = (note: CalendarNote) => {
+    dialogStates.setShowNotesListDialog(false);
+    noteActions.openNoteDialog(
+      dialogStates.selectedDayDate || new Date(),
+      note
+    );
+  };
+
+  const handleDeleteNoteFromList = async (noteId: string) => {
+    const success = await deleteNoteHook(noteId, () => {
+      dialogStates.setShowPasswordDialog(true);
+    });
+
+    if (success) {
+      // Update the notes list in the dialog
+      const updatedNotes = dialogStates.selectedDayNotes.filter(
+        (n) => n.id !== noteId
+      );
+      dialogStates.setSelectedDayNotes(updatedNotes);
+
+      // If no notes left, close the dialog
+      if (updatedNotes.length === 0) {
+        dialogStates.setShowNotesListDialog(false);
+      }
+
+      // Reload compare mode data if needed
+      if (isCompareMode && compareNoteCalendarId) {
+        const password = getCachedPassword(compareNoteCalendarId);
+        const passwordParam = password ? `&password=${password}` : "";
+        try {
+          const notesRes = await fetch(
+            `/api/notes?calendarId=${compareNoteCalendarId}${passwordParam}`
+          );
+          const notesData = notesRes.ok ? await notesRes.json() : [];
+          setCompareCalendarData((prev) => {
+            const updated = new Map(prev);
+            const data = updated.get(compareNoteCalendarId);
+            if (data) {
+              updated.set(compareNoteCalendarId, { ...data, notes: notesData });
+            }
+            return updated;
+          });
+        } catch (error) {
+          console.error("Failed to reload notes:", error);
+        }
+      }
+    }
+  };
+
+  const handleAddNewNoteFromList = () => {
+    const date = dialogStates.selectedDayDate || new Date();
+    noteActions.openNoteDialog(date, undefined);
   };
 
   // External sync management
@@ -442,25 +510,49 @@ function HomeContent() {
 
   const handleDayRightClick = (e: React.MouseEvent, date: Date) => {
     e.preventDefault();
-    const existingNote = notes.find(
-      (note) => note.date && isSameDay(new Date(note.date), date)
-    );
-    noteActions.openNoteDialog(date, existingNote);
+    // Get all notes/events for this date (including recurring)
+    const allDayNotes = findNotesForDate(notes, date);
+
+    // Always show list dialog when notes exist (to allow adding more)
+    if (allDayNotes.length >= 1) {
+      dialogStates.setSelectedDayDate(date);
+      dialogStates.setSelectedDayNotes(allDayNotes);
+      dialogStates.setShowNotesListDialog(true);
+    } else {
+      // No notes - show note edit dialog to create new
+      noteActions.openNoteDialog(date, undefined);
+    }
   };
 
   const handleNoteIconClick = (e: React.MouseEvent, date: Date) => {
     e.stopPropagation();
-    const existingNote = notes.find(
-      (note) => note.date && isSameDay(new Date(note.date), date)
-    );
-    noteActions.openNoteDialog(date, existingNote);
+    // Get all notes/events for this date (including recurring)
+    const allDayNotes = findNotesForDate(notes, date);
+
+    // Always show list dialog when notes exist (to allow adding more)
+    if (allDayNotes.length >= 1) {
+      dialogStates.setSelectedDayDate(date);
+      dialogStates.setSelectedDayNotes(allDayNotes);
+      dialogStates.setShowNotesListDialog(true);
+    } else {
+      // No notes - show note edit dialog to create new
+      noteActions.openNoteDialog(date, undefined);
+    }
   };
 
   const handleLongPressDay = (date: Date) => {
-    const existingNote = notes.find(
-      (note) => note.date && isSameDay(new Date(note.date), date)
-    );
-    noteActions.openNoteDialog(date, existingNote);
+    // Get all notes/events for this date (including recurring)
+    const allDayNotes = findNotesForDate(notes, date);
+
+    // Always show list dialog when notes exist (to allow adding more)
+    if (allDayNotes.length >= 1) {
+      dialogStates.setSelectedDayDate(date);
+      dialogStates.setSelectedDayNotes(allDayNotes);
+      dialogStates.setShowNotesListDialog(true);
+    } else {
+      // No notes - show note edit dialog to create new
+      noteActions.openNoteDialog(date, undefined);
+    }
   };
 
   const handleShowAllShifts = (date: Date, dayShifts: ShiftWithCalendar[]) => {
@@ -698,11 +790,20 @@ function HomeContent() {
     const calendarData = compareCalendarData.get(calendarId);
     if (!calendarData) return;
 
-    const existingNote = calendarData.notes.find(
-      (note) => note.date && isSameDay(new Date(note.date), date)
-    );
-    setCompareNoteCalendarId(calendarId);
-    noteActions.openNoteDialog(date, existingNote);
+    // Get all notes/events for this date (including recurring)
+    const allDayNotes = findNotesForDate(calendarData.notes, date);
+
+    // Always show list dialog when notes exist (to allow adding more)
+    if (allDayNotes.length >= 1) {
+      setCompareNoteCalendarId(calendarId);
+      dialogStates.setSelectedDayDate(date);
+      dialogStates.setSelectedDayNotes(allDayNotes);
+      dialogStates.setShowNotesListDialog(true);
+    } else {
+      // No notes - show note edit dialog to create new
+      setCompareNoteCalendarId(calendarId);
+      noteActions.openNoteDialog(date, undefined);
+    }
   };
 
   const handleCompareNoteIconClick = (
@@ -711,18 +812,43 @@ function HomeContent() {
     date: Date
   ) => {
     e.stopPropagation();
-    handleCompareDayRightClick(calendarId, e, date);
+    const calendarData = compareCalendarData.get(calendarId);
+    if (!calendarData) return;
+
+    // Get all notes/events for this date (including recurring)
+    const allDayNotes = findNotesForDate(calendarData.notes, date);
+
+    // Always show list dialog when notes exist (to allow adding more)
+    if (allDayNotes.length >= 1) {
+      setCompareNoteCalendarId(calendarId);
+      dialogStates.setSelectedDayDate(date);
+      dialogStates.setSelectedDayNotes(allDayNotes);
+      dialogStates.setShowNotesListDialog(true);
+    } else {
+      // No notes - show note edit dialog to create new
+      setCompareNoteCalendarId(calendarId);
+      noteActions.openNoteDialog(date, undefined);
+    }
   };
 
   const handleCompareLongPress = (calendarId: string, date: Date) => {
     const calendarData = compareCalendarData.get(calendarId);
     if (!calendarData) return;
 
-    const existingNote = calendarData.notes.find(
-      (note) => note.date && isSameDay(new Date(note.date), date)
-    );
-    setCompareNoteCalendarId(calendarId);
-    noteActions.openNoteDialog(date, existingNote);
+    // Get all notes/events for this date (including recurring)
+    const allDayNotes = findNotesForDate(calendarData.notes, date);
+
+    // Always show list dialog when notes exist (to allow adding more)
+    if (allDayNotes.length >= 1) {
+      setCompareNoteCalendarId(calendarId);
+      dialogStates.setSelectedDayDate(date);
+      dialogStates.setSelectedDayNotes(allDayNotes);
+      dialogStates.setShowNotesListDialog(true);
+    } else {
+      // No notes - show note edit dialog to create new
+      setCompareNoteCalendarId(calendarId);
+      noteActions.openNoteDialog(date, undefined);
+    }
   };
 
   const handleCompareShowAllShifts = (
@@ -1054,6 +1180,12 @@ function HomeContent() {
           selectedNoteDate={noteActions.selectedDate}
           onNoteSubmit={handleNoteSubmit}
           onNoteDelete={noteActions.selectedNote ? handleNoteDelete : undefined}
+          showNotesListDialog={dialogStates.showNotesListDialog}
+          onNotesListDialogChange={dialogStates.setShowNotesListDialog}
+          selectedDayNotes={dialogStates.selectedDayNotes}
+          onEditNoteFromList={handleEditNoteFromList}
+          onDeleteNoteFromList={handleDeleteNoteFromList}
+          onAddNewNote={handleAddNewNoteFromList}
         />
 
         <AppFooter versionInfo={versionInfo} />
@@ -1069,9 +1201,82 @@ function HomeContent() {
   // Empty state
   if (calendars.length === 0) {
     return (
-      <EmptyCalendarState
-        onCreateCalendar={() => dialogStates.setShowCalendarDialog(true)}
-      />
+      <>
+        <EmptyCalendarState
+          onCreateCalendar={() => dialogStates.setShowCalendarDialog(true)}
+        />
+        <DialogManager
+          showCalendarDialog={dialogStates.showCalendarDialog}
+          onCalendarDialogChange={dialogStates.setShowCalendarDialog}
+          onCreateCalendar={createCalendarHook}
+          showShiftDialog={dialogStates.showShiftDialog}
+          onShiftDialogChange={dialogStates.setShowShiftDialog}
+          onShiftSubmit={shiftActions.handleShiftSubmit}
+          selectedDate={selectedDate}
+          selectedCalendar={selectedCalendar || null}
+          onPresetsChange={refetchPresets}
+          showPasswordDialog={dialogStates.showPasswordDialog}
+          onPasswordDialogChange={dialogStates.setShowPasswordDialog}
+          calendars={calendars}
+          onPasswordSuccess={handlePasswordSuccess}
+          showCalendarSettingsDialog={dialogStates.showCalendarSettingsDialog}
+          onCalendarSettingsDialogChange={
+            dialogStates.setShowCalendarSettingsDialog
+          }
+          onCalendarSettingsSuccess={refetchCalendars}
+          onDeleteCalendar={handleDeleteCalendar}
+          showExternalSyncDialog={dialogStates.showExternalSyncDialog}
+          onExternalSyncDialogChange={dialogStates.setShowExternalSyncDialog}
+          syncErrorRefreshTrigger={syncLogRefreshTrigger}
+          onSyncComplete={handleSyncComplete}
+          showSyncNotificationDialog={dialogStates.showSyncNotificationDialog}
+          onSyncNotificationDialogChange={
+            dialogStates.setShowSyncNotificationDialog
+          }
+          onErrorsMarkedRead={fetchSyncErrorStatus}
+          onSyncLogUpdate={() => setSyncLogRefreshTrigger((prev) => prev + 1)}
+          showDayShiftsDialog={dialogStates.showDayShiftsDialog}
+          onDayShiftsDialogChange={dialogStates.setShowDayShiftsDialog}
+          selectedDayDate={dialogStates.selectedDayDate}
+          selectedDayShifts={dialogStates.selectedDayShifts}
+          locale={locale}
+          onDeleteShiftFromDayDialog={handleDeleteShiftFromDayDialog}
+          showSyncedShiftsDialog={dialogStates.showSyncedShiftsDialog}
+          onSyncedShiftsDialogChange={dialogStates.setShowSyncedShiftsDialog}
+          selectedSyncedShifts={dialogStates.selectedSyncedShifts}
+          showViewSettingsDialog={dialogStates.showViewSettingsDialog}
+          onViewSettingsDialogChange={dialogStates.setShowViewSettingsDialog}
+          viewSettings={viewSettings}
+          onViewSettingsChange={{
+            handleShiftsPerDayChange: viewSettings.handleShiftsPerDayChange,
+            handleExternalShiftsPerDayChange:
+              viewSettings.handleExternalShiftsPerDayChange,
+            handleShowShiftNotesChange: viewSettings.handleShowShiftNotesChange,
+            handleShowFullTitlesChange: viewSettings.handleShowFullTitlesChange,
+            handleShiftSortTypeChange: viewSettings.handleShiftSortTypeChange,
+            handleShiftSortOrderChange: viewSettings.handleShiftSortOrderChange,
+            handleCombinedSortModeChange:
+              viewSettings.handleCombinedSortModeChange,
+            handleHighlightWeekendsChange:
+              viewSettings.handleHighlightWeekendsChange,
+            handleHighlightedWeekdaysChange:
+              viewSettings.handleHighlightedWeekdaysChange,
+            handleHighlightColorChange: viewSettings.handleHighlightColorChange,
+          }}
+          showNoteDialog={noteActions.showNoteDialog}
+          onNoteDialogChange={noteActions.handleNoteDialogChange}
+          selectedNote={noteActions.selectedNote}
+          selectedNoteDate={noteActions.selectedDate}
+          onNoteSubmit={handleNoteSubmit}
+          onNoteDelete={noteActions.selectedNote ? handleNoteDelete : undefined}
+          showNotesListDialog={dialogStates.showNotesListDialog}
+          onNotesListDialogChange={dialogStates.setShowNotesListDialog}
+          selectedDayNotes={dialogStates.selectedDayNotes}
+          onEditNoteFromList={handleEditNoteFromList}
+          onDeleteNoteFromList={handleDeleteNoteFromList}
+          onAddNewNote={handleAddNewNoteFromList}
+        />
+      </>
     );
   }
 
@@ -1269,6 +1474,12 @@ function HomeContent() {
         selectedNoteDate={noteActions.selectedDate}
         onNoteSubmit={handleNoteSubmit}
         onNoteDelete={noteActions.selectedNote ? handleNoteDelete : undefined}
+        showNotesListDialog={dialogStates.showNotesListDialog}
+        onNotesListDialogChange={dialogStates.setShowNotesListDialog}
+        selectedDayNotes={dialogStates.selectedDayNotes}
+        onEditNoteFromList={handleEditNoteFromList}
+        onDeleteNoteFromList={handleDeleteNoteFromList}
+        onAddNewNote={handleAddNewNoteFromList}
       />
 
       <AppFooter versionInfo={versionInfo} />
