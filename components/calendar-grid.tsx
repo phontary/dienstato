@@ -75,7 +75,7 @@ export function CalendarGrid({
 
   const getShiftsForDate = (date: Date) => {
     return shifts.filter(
-      (shift) => shift.date && isSameDay(shift.date as Date, date)
+      (shift) => shift.date && isSameDay(shift.date as Date, date),
     );
   };
 
@@ -155,7 +155,7 @@ export function CalendarGrid({
           if (onLongPress) {
             pressTimerRef.current[dayKey] = setTimeout(
               () => onLongPress(day),
-              500
+              500,
             );
           }
         };
@@ -176,9 +176,9 @@ export function CalendarGrid({
         const eventBorderStyle =
           dayEvents.length === 1 && !isTodayDate
             ? {
-              borderColor: dayEvents[0].color || "#3b82f6",
-              borderWidth: "2px",
-            }
+                borderColor: dayEvents[0].color || "#3b82f6",
+                borderWidth: "2px",
+              }
             : {};
 
         return (
@@ -202,9 +202,9 @@ export function CalendarGrid({
               WebkitTouchCallout: "none",
               ...(isHighlighted &&
                 !isTodayDate && {
-                backgroundColor: `${highlightColor}15`,
-                borderColor: `${highlightColor}40`,
-              }),
+                  backgroundColor: `${highlightColor}15`,
+                  borderColor: `${highlightColor}40`,
+                }),
               // Event border styling (overrides highlight if both present)
               ...eventBorderStyle,
               // Multi-event gradient border using background trick to support border-radius
@@ -220,35 +220,39 @@ export function CalendarGrid({
             className={`
               min-h-25 sm:min-h-28 px-1 py-1.5 sm:p-2.5 rounded-md sm:rounded-lg text-sm transition-all relative flex flex-col border sm:border-2
               ${isCurrentMonth ? "text-foreground" : "text-muted-foreground/50"}
-              ${isTodayDate
-                ? "border-primary shadow-lg shadow-primary/20 bg-primary/5 ring-2 ring-primary/20"
-                : dayEvent
-                  ? "" // Event border is handled by inline style
-                  : "border-border/30 sm:border-border/50"
+              ${
+                isTodayDate
+                  ? "border-primary shadow-lg shadow-primary/20 bg-primary/5 ring-2 ring-primary/20"
+                  : dayEvent
+                    ? "" // Event border is handled by inline style
+                    : "border-border/30 sm:border-border/50"
               }
-              ${isCurrentMonth
-                ? "hover:bg-accent cursor-pointer active:bg-accent/80 hover:border-border"
-                : selectedPresetId
-                  ? "cursor-not-allowed"
-                  : "cursor-pointer"
+              ${
+                isCurrentMonth
+                  ? "hover:bg-accent cursor-pointer active:bg-accent/80 hover:border-border"
+                  : selectedPresetId
+                    ? "cursor-not-allowed"
+                    : "cursor-pointer"
               }
               ${!isCurrentMonth ? "opacity-40" : ""}
               ${isToggling ? "opacity-50 cursor-wait pointer-events-none" : ""}
             `}
           >
             <div
-              className={`text-sm sm:text-sm font-semibold mb-1 flex items-center justify-between gap-1 ${isTodayDate ? "text-primary" : ""
-                }`}
+              className={`text-sm sm:text-sm font-semibold mb-1 flex items-center justify-between gap-1 ${
+                isTodayDate ? "text-primary" : ""
+              }`}
             >
               <span className="shrink-0">{day.getDate()}</span>
               <div className="flex items-center gap-1 min-w-0">
                 {/* Multi-indicator badge when multiple notes/events exist */}
                 {totalNotesCount > 1 && (
                   <span
-                    className={`inline-flex items-center justify-center text-[9px] sm:text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-primary/20 text-primary border border-primary/30 ${!selectedPresetId && onNoteIconClick
-                      ? "cursor-pointer hover:bg-primary/30 transition-colors"
-                      : ""
-                      }`}
+                    className={`inline-flex items-center justify-center text-[9px] sm:text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-primary/20 text-primary border border-primary/30 ${
+                      !selectedPresetId && onNoteIconClick
+                        ? "cursor-pointer hover:bg-primary/30 transition-colors"
+                        : ""
+                    }`}
                     title={t("note.multipleEntries", {
                       count: totalNotesCount,
                     })}
@@ -265,10 +269,11 @@ export function CalendarGrid({
                 {/* Display first event title - clickable if no preset selected */}
                 {dayEvent && totalNotesCount === 1 && (
                   <span
-                    className={`text-[10px] sm:text-xs font-medium truncate opacity-75 min-w-0 ${!selectedPresetId && onNoteIconClick
-                      ? "cursor-pointer hover:opacity-100 transition-opacity"
-                      : ""
-                      }`}
+                    className={`text-[10px] sm:text-xs font-medium truncate opacity-75 min-w-0 ${
+                      !selectedPresetId && onNoteIconClick
+                        ? "cursor-pointer hover:opacity-100 transition-opacity"
+                        : ""
+                    }`}
                     style={{ color: dayEvent.color || "#3b82f6" }}
                     title={dayEvent.note}
                     onClick={(e) => {
@@ -284,10 +289,11 @@ export function CalendarGrid({
                 {/* Display first note title if no event and only one entry - clickable if no preset selected */}
                 {!dayEvent && dayNote && totalNotesCount === 1 && (
                   <span
-                    className={`text-[10px] sm:text-xs font-medium text-orange-500 truncate opacity-75 min-w-0 ${!selectedPresetId && onNoteIconClick
-                      ? "cursor-pointer hover:opacity-100 transition-opacity"
-                      : ""
-                      }`}
+                    className={`text-[10px] sm:text-xs font-medium text-orange-500 truncate opacity-75 min-w-0 ${
+                      !selectedPresetId && onNoteIconClick
+                        ? "cursor-pointer hover:opacity-100 transition-opacity"
+                        : ""
+                    }`}
                     title={dayNote.note}
                     onClick={(e) => {
                       if (!selectedPresetId && onNoteIconClick) {
@@ -301,7 +307,7 @@ export function CalendarGrid({
                 )}
               </div>
             </div>
-            <div className="flex-1 space-y-0.5 sm:space-y-1 overflow-hidden">
+            <div className="flex-1 space-y-0.5 sm:space-y-1 overflow-visible">
               {(() => {
                 // Separate shifts by sync displayMode
                 const syncedShiftsByMode: {
@@ -311,7 +317,7 @@ export function CalendarGrid({
                 dayShifts.forEach((shift) => {
                   if (shift.syncedFromExternal && shift.externalSyncId) {
                     const sync = externalSyncs.find(
-                      (s) => s.id === shift.externalSyncId
+                      (s) => s.id === shift.externalSyncId,
                     );
                     const displayMode = sync?.displayMode || "normal";
 
@@ -326,13 +332,13 @@ export function CalendarGrid({
 
                 // Get shifts to display normally - separate regular from external
                 const regularShifts = dayShifts.filter(
-                  (s) => !s.syncedFromExternal
+                  (s) => !s.syncedFromExternal,
                 );
                 const externalNormalShifts = dayShifts.filter((s) => {
                   if (!s.syncedFromExternal) return false;
                   if (!s.externalSyncId) return false;
                   const sync = externalSyncs.find(
-                    (sync) => sync.id === s.externalSyncId
+                    (sync) => sync.id === s.externalSyncId,
                   );
                   return sync && sync.displayMode === "normal";
                 });
@@ -380,10 +386,10 @@ export function CalendarGrid({
                 const hiddenExternalCount =
                   maxExternalShiftsToShow !== undefined
                     ? Math.max(
-                      0,
-                      sortedExternalNormalShifts.length -
-                      maxExternalShiftsToShow
-                    )
+                        0,
+                        sortedExternalNormalShifts.length -
+                          maxExternalShiftsToShow,
+                      )
                     : 0;
                 const totalHiddenCount =
                   hiddenRegularCount + hiddenExternalCount;
@@ -394,7 +400,7 @@ export function CalendarGrid({
                     !s.syncedFromExternal ||
                     (s.externalSyncId &&
                       externalSyncs.find((sync) => sync.id === s.externalSyncId)
-                        ?.displayMode === "normal")
+                        ?.displayMode === "normal"),
                 );
 
                 return (
@@ -406,10 +412,10 @@ export function CalendarGrid({
                         {allSortedShifts.map((shift) => {
                           const isRegular = !shift.syncedFromExternal;
                           const regularIndex = isRegular
-                            ? regularIndexMap.get(shift.id) ?? -1
+                            ? (regularIndexMap.get(shift.id) ?? -1)
                             : -1;
                           const externalIndex = !isRegular
-                            ? externalIndexMap.get(shift.id) ?? -1
+                            ? (externalIndexMap.get(shift.id) ?? -1)
                             : -1;
 
                           // Check if shift should be displayed based on its type's limit
@@ -429,7 +435,9 @@ export function CalendarGrid({
                               shift={shift}
                               showShiftNotes={showShiftNotes}
                               showFullTitles={showFullTitles}
-                              onEditShift={!selectedPresetId ? onEditShift : undefined}
+                              onEditShift={
+                                !selectedPresetId ? onEditShift : undefined
+                              }
                             />
                           );
                         })}
@@ -443,10 +451,11 @@ export function CalendarGrid({
                               // Show all shifts dialog with all day shifts
                               onShowAllShifts?.(day, displayableShifts);
                             }}
-                            className={`text-[10px] sm:text-xs text-primary font-semibold text-center pt-0.5 transition-colors ${selectedPresetId
-                              ? "cursor-not-allowed opacity-50"
-                              : "hover:text-primary/80 hover:underline cursor-pointer"
-                              }`}
+                            className={`text-[10px] sm:text-xs text-primary font-semibold text-center pt-0.5 transition-colors ${
+                              selectedPresetId
+                                ? "cursor-not-allowed opacity-50"
+                                : "hover:text-primary/80 hover:underline cursor-pointer"
+                            }`}
                           >
                             +{totalHiddenCount}{" "}
                             {totalHiddenCount === 1
@@ -468,7 +477,9 @@ export function CalendarGrid({
                             shift={shift}
                             showShiftNotes={showShiftNotes}
                             showFullTitles={showFullTitles}
-                            onEditShift={!selectedPresetId ? onEditShift : undefined}
+                            onEditShift={
+                              !selectedPresetId ? onEditShift : undefined
+                            }
                           />
                         ))}
 
@@ -476,16 +487,18 @@ export function CalendarGrid({
                         {(maxExternalShiftsToShow === undefined
                           ? sortedExternalNormalShifts
                           : sortedExternalNormalShifts.slice(
-                            0,
-                            maxExternalShiftsToShow
-                          )
+                              0,
+                              maxExternalShiftsToShow,
+                            )
                         ).map((shift) => (
                           <CalendarShiftCard
                             key={shift.id}
                             shift={shift}
                             showShiftNotes={showShiftNotes}
                             showFullTitles={showFullTitles}
-                            onEditShift={!selectedPresetId ? onEditShift : undefined}
+                            onEditShift={
+                              !selectedPresetId ? onEditShift : undefined
+                            }
                           />
                         ))}
 
@@ -498,10 +511,11 @@ export function CalendarGrid({
                               // Show all shifts dialog with all day shifts
                               onShowAllShifts?.(day, displayableShifts);
                             }}
-                            className={`text-[10px] sm:text-xs text-primary font-semibold text-center pt-0.5 transition-colors ${selectedPresetId
-                              ? "cursor-not-allowed opacity-50"
-                              : "hover:text-primary/80 hover:underline cursor-pointer"
-                              }`}
+                            className={`text-[10px] sm:text-xs text-primary font-semibold text-center pt-0.5 transition-colors ${
+                              selectedPresetId
+                                ? "cursor-not-allowed opacity-50"
+                                : "hover:text-primary/80 hover:underline cursor-pointer"
+                            }`}
                           >
                             +{totalHiddenCount}{" "}
                             {totalHiddenCount === 1
@@ -526,10 +540,11 @@ export function CalendarGrid({
                               e.stopPropagation();
                               onShowSyncedShifts?.(day, syncShifts);
                             }}
-                            className={`text-[10px] sm:text-xs px-1 py-0.5 sm:px-1.5 sm:py-1 rounded bg-muted/50 border border-border/50 text-muted-foreground transition-colors text-center ${selectedPresetId
-                              ? "cursor-not-allowed opacity-50"
-                              : "hover:bg-muted hover:text-foreground cursor-pointer"
-                              }`}
+                            className={`text-[10px] sm:text-xs px-1 py-0.5 sm:px-1.5 sm:py-1 rounded bg-muted/50 border border-border/50 text-muted-foreground transition-colors text-center ${
+                              selectedPresetId
+                                ? "cursor-not-allowed opacity-50"
+                                : "hover:bg-muted hover:text-foreground cursor-pointer"
+                            }`}
                             style={{
                               borderLeftColor: sync.color,
                               borderLeftWidth: "2px",
@@ -541,7 +556,7 @@ export function CalendarGrid({
                             </span>
                           </div>
                         );
-                      }
+                      },
                     )}
                   </>
                 );
