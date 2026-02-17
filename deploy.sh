@@ -78,10 +78,12 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
 fi
 echo ""
 
-# Build and start
-echo "Building and starting Dienstato..."
+# Pull latest image and start
+echo "Pulling latest Dienstato image..."
+docker-compose pull
 echo ""
-docker-compose up -d --build
+echo "Starting Dienstato..."
+docker-compose up -d
 
 # Wait a bit for the container to start
 echo ""

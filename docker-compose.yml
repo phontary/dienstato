@@ -1,13 +1,7 @@
 services:
   dienstato:
-    # Build from local Dockerfile (clone from https://github.com/phontary/Dienstato.git)
-    build:
-      context: .
-      dockerfile: Dockerfile
-      args:
-        VERSION: "2.2.0"
-    # Or use pre-built image from GitHub Container Registry
-    # image: ghcr.io/phontary/dienstato:latest
+    # Use pre-built image from GitHub Container Registry
+    image: ghcr.io/phontary/dienstato:latest
     container_name: dienstato
     restart: unless-stopped
     ports:
