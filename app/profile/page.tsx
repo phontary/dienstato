@@ -11,6 +11,7 @@ import { signOut } from "@/lib/auth/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { UAParser } from "ua-parser-js";
 import {
   Card,
@@ -23,7 +24,7 @@ import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 import { AuthHeader } from "@/components/auth-header";
-import { Smartphone, Monitor, Tablet, HelpCircle, LogOut } from "lucide-react";
+import { Smartphone, Monitor, Tablet, HelpCircle, LogOut, Mail } from "lucide-react";
 import { AppFooter } from "@/components/app-footer";
 import { FullscreenLoader } from "@/components/fullscreen-loader";
 import { useVersionInfo } from "@/hooks/useVersionInfo";
@@ -71,6 +72,14 @@ export default function ProfilePage() {
   const [avatarPreview, setAvatarPreview] = useState<string>("");
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
 
+  // Email preferences state
+  const [emailPreferences, setEmailPreferences] = useState<{
+    monthlyReportEnabled: boolean;
+    monthlyReportDay: number;
+  } | null>(null);
+  const [isLoadingEmailPrefs, setIsLoadingEmailPrefs] = useState(true);
+  const [isUpdatingEmailPrefs, setIsUpdatingEmailPrefs] = useState(false);
+
   // Check if user has password-based authentication
   const hasPasswordAuth = accounts.some(
     (account) => account.provider === "credential"
@@ -88,6 +97,30 @@ export default function ProfilePage() {
       setEditEmail(user.email || "");
       setAvatarPreview(user.image || "");
     }
+  }, [user]);
+
+  // Fetch email preferences
+  useEffect(() => {
+    const fetchEmailPreferences = async () => {
+      if (!user) return;
+
+      try {
+        const response = await fetch("/api/emails/preferences");
+        if (response.ok) {
+          const data = await response.json();
+          setEmailPreferences({
+            monthlyReportEnabled: data.monthlyReportEnabled,
+            monthlyReportDay: data.monthlyReportDay,
+          });
+        }
+      } catch (error) {
+        console.error("Error fetching email preferences:", error);
+      } finally {
+        setIsLoadingEmailPrefs(false);
+      }
+    };
+
+    fetchEmailPreferences();
   }, [user]);
 
   // Redirect if auth disabled or not logged in
@@ -363,6 +396,47 @@ export default function ProfilePage() {
       );
     } else {
       toast.error(result.error || t("common.error"));
+    }
+  };
+
+  const handleUpdateEmailPreferences = async (updates: {
+    monthlyReportEnabled?: boolean;
+    monthlyReportDay?: number;
+  }) => {
+    if (!emailPreferences) return;
+
+    setIsUpdatingEmailPrefs(true);
+
+    try {
+      const response = await fetch("/api/emails/preferences", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updates),
+      });
+
+      if (isRateLimitError(response)) {
+        await handleRateLimitError(response, t);
+        return;
+      }
+
+      if (!response.ok) {
+        const data = await response.json();
+        toast.error(data.error || t("common.error"));
+        return;
+      }
+
+      const data = await response.json();
+      setEmailPreferences({
+        monthlyReportEnabled: data.monthlyReportEnabled,
+        monthlyReportDay: data.monthlyReportDay,
+      });
+
+      toast.success("Email preferences updated successfully");
+    } catch (error) {
+      console.error("Error updating email preferences:", error);
+      toast.error(t("common.error"));
+    } finally {
+      setIsUpdatingEmailPrefs(false);
     }
   };
 
@@ -661,6 +735,94 @@ export default function ProfilePage() {
                       </div>
                     ))}
                   </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Email Preferences */}
+            <Card className="border-border/50 bg-gradient-to-br from-card/95 via-card to-card/80 backdrop-blur-sm">
+              <CardHeader>
+                <CardTitle className="bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent flex items-center gap-2">
+                  <Mail className="h-5 w-5" />
+                  Email Preferences
+                </CardTitle>
+                <CardDescription>
+                  Manage your email notifications and monthly calendar reports
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {isLoadingEmailPrefs ? (
+                  <p className="text-sm text-muted-foreground">
+                    {t("common.loading")}
+                  </p>
+                ) : emailPreferences ? (
+                  <div className="space-y-6">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <Label htmlFor="monthlyReportEnabled" className="text-base">
+                          Monthly Calendar Reports
+                        </Label>
+                        <p className="text-sm text-muted-foreground">
+                          Receive monthly PDF reports of your calendars via email
+                        </p>
+                      </div>
+                      <Switch
+                        id="monthlyReportEnabled"
+                        checked={emailPreferences.monthlyReportEnabled}
+                        onCheckedChange={(checked) =>
+                          handleUpdateEmailPreferences({
+                            monthlyReportEnabled: checked,
+                          })
+                        }
+                        disabled={isUpdatingEmailPrefs}
+                      />
+                    </div>
+
+                    {emailPreferences.monthlyReportEnabled && (
+                      <div className="space-y-2 pt-2 border-t">
+                        <Label htmlFor="monthlyReportDay">
+                          Send reports on day of month
+                        </Label>
+                        <div className="flex items-center gap-2">
+                          <Input
+                            id="monthlyReportDay"
+                            type="number"
+                            min="1"
+                            max="28"
+                            value={emailPreferences.monthlyReportDay}
+                            onChange={(e) => {
+                              const value = parseInt(e.target.value);
+                              if (value >= 1 && value <= 28) {
+                                handleUpdateEmailPreferences({
+                                  monthlyReportDay: value,
+                                });
+                              }
+                            }}
+                            disabled={isUpdatingEmailPrefs}
+                            className="w-24"
+                          />
+                          <span className="text-sm text-muted-foreground">
+                            (1-28)
+                          </span>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Reports will be sent on the {emailPreferences.monthlyReportDay}
+                          {emailPreferences.monthlyReportDay === 1
+                            ? "st"
+                            : emailPreferences.monthlyReportDay === 2
+                            ? "nd"
+                            : emailPreferences.monthlyReportDay === 3
+                            ? "rd"
+                            : "th"}{" "}
+                          day of each month for your subscribed calendars
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    Failed to load email preferences
+                  </p>
                 )}
               </CardContent>
             </Card>
