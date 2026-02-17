@@ -80,3 +80,4 @@ public/workbox-*.js.map
 
 # Local scripts
 .LOCAL
+.env
