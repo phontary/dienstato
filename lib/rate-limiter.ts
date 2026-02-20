@@ -149,26 +149,6 @@ const config = {
         10
       ) * 1000, // 1 minute
   },
-  emailPreferencesGet: {
-    requests: parseInt(
-      process.env.RATE_LIMIT_EMAIL_PREFERENCES_GET || "20",
-      10
-    ),
-    windowMs:
-      parseInt(process.env.RATE_LIMIT_EMAIL_PREFERENCES_GET_WINDOW || "60", 10) *
-      1000, // 1 minute
-  },
-  emailPreferencesUpdate: {
-    requests: parseInt(
-      process.env.RATE_LIMIT_EMAIL_PREFERENCES_UPDATE || "10",
-      10
-    ),
-    windowMs:
-      parseInt(
-        process.env.RATE_LIMIT_EMAIL_PREFERENCES_UPDATE_WINDOW || "60",
-        10
-      ) * 1000, // 1 minute
-  },
 };
 
 // =============================================================================
@@ -343,9 +323,7 @@ export function rateLimit(
     | "admin-user-mutations"
     | "admin-password-reset"
     | "admin-bulk-operations"
-    | "admin-calendar-mutations"
-    | "email-preferences-get"
-    | "email-preferences-update" = "auth",
+    | "admin-calendar-mutations" = "auth",
   resourceId?: string
 ): NextResponse | null {
   // Special handling for resource-based limits (e.g., token-creation per calendar)
@@ -405,12 +383,6 @@ export function rateLimit(
       break;
     case "admin-calendar-mutations":
       options = config.adminCalendarMutations;
-      break;
-    case "email-preferences-get":
-      options = config.emailPreferencesGet;
-      break;
-    case "email-preferences-update":
-      options = config.emailPreferencesUpdate;
       break;
   }
 
