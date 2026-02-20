@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Button } from "@/components/ui/button";
 import { Printer } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { format, getDaysInMonth } from "date-fns";
+import { format, getDaysInMonth, getDay } from "date-fns";
 import { ShiftWithCalendar } from "@/lib/types";
 import { de, enUS, it } from "date-fns/locale";
 
